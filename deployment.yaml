@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: road-hazard-portal
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: hazard-portal
+  template:
+    metadata:
+      labels:
+        app: hazard-portal
+    spec:
+      containers:
+      - name: portal-container
+        image: 24mis0129/road-hazard-portal:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: road-hazard-service
+spec:
+  type: NodePort
+  selector:
+    app: hazard-portal
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 32080
