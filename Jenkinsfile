@@ -5,6 +5,7 @@ pipeline {
         string(name: 'BUILD_TAG', defaultValue: "v${BUILD_NUMBER}", description: 'Image Tag')
     }
     environment {
+        DOCKER_CREDS = 'docker-hub-credentials'
         KUBE_CONFIG  = 'kubeconfig-credentials'
         DOCKER_HOST  = 'tcp://127.0.0.1:2375'
     }
@@ -17,9 +18,15 @@ pipeline {
         }
         stage('Push to Registry') {
             steps {
-                // Using the pre-authenticated local host daemon context directly
-                bat "docker push %DOCKER_IMAGE%:%BUILD_TAG%"
-                bat "docker push %DOCKER_IMAGE%:latest"
+                withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDS}", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                    // Executing dynamic runtime stream mapping within the isolated workspace folder pathing
+                    bat """
+                    powershell -Command "New-Item -Path . -Name 'docker-config' -ItemType 'Directory' -Force | Out-Null"
+                    powershell -Command "\$Bytes = [System.Text.Encoding]::UTF8.GetBytes('%USER%:%PASS%'); \$Base64 = [Convert]::ToBase64String(\$Bytes); \$Json = @{ auths = @{ 'https://docker.io' = @{ auth = \$Base64 } } } | ConvertTo-Json -Depth 4; Set-Content -Path 'docker-config\\config.json' -Value \$Json -Force"
+                    """
+                    bat "docker --config docker-config push %DOCKER_IMAGE%:%BUILD_TAG%"
+                    bat "docker --config docker-config push %DOCKER_IMAGE%:latest"
+                }
             }
         }
         stage('Deploy & Rollout Watch') {
@@ -41,6 +48,11 @@ pipeline {
                     }
                 }
             }
+        }
+    }
+    post {
+        always {
+            bat "powershell -Command \"if (Test-Path 'docker-config') { Remove-Item -Path 'docker-config' -Recurse -Force }\""
         }
     }
 }
