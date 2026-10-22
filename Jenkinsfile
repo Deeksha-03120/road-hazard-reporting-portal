@@ -19,7 +19,7 @@ pipeline {
         stage('Push to Registry') {
             steps {
                 withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDS}", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                    // Executing dynamic runtime stream mapping within the isolated workspace folder pathing
+                    // Injecting absolute index registry URL mappings dynamically into the workspace run stream
                     bat """
                     powershell -Command "New-Item -Path . -Name 'docker-config' -ItemType 'Directory' -Force | Out-Null"
                     powershell -Command "\$Bytes = [System.Text.Encoding]::UTF8.GetBytes('%USER%:%PASS%'); \$Base64 = [Convert]::ToBase64String(\$Bytes); \$Json = @{ auths = @{ 'https://docker.io' = @{ auth = \$Base64 } } } | ConvertTo-Json -Depth 4; Set-Content -Path 'docker-config\\config.json' -Value \$Json -Force"
