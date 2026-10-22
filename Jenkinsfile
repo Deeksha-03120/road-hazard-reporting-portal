@@ -1,13 +1,13 @@
 pipeline {
     agent any
     parameters {
-        string(name: 'DOCKER_IMAGE', defaultValue: 'deeksha03120/road-hazard-portal', description: 'Docker Hub Repository Path')
+        string(name: 'DOCKER_IMAGE', defaultValue: '24mis0129/road-hazard-portal', description: 'Docker Hub Repository Path')
         string(name: 'BUILD_TAG', defaultValue: "v${BUILD_NUMBER}", description: 'Image Tag')
     }
     environment {
         DOCKER_CREDS = 'docker-hub-credentials'
         KUBE_CONFIG  = 'kubeconfig-credentials'
-        // Force system daemon fallback mapping
+        // Route daemon traffic directly through local network pipe endpoint bypass
         DOCKER_HOST  = 'tcp://127.0.0.1:2375'
     }
     stages {
@@ -30,13 +30,21 @@ pipeline {
             steps {
                 withCredentials([file(credentialsId: "${KUBE_CONFIG}", variable: 'KUBECONFIG_FILE')]) {
                     script {
+                        // Dynamically update cluster template targeting Windows stream manipulation paths
                         bat "powershell -Command \"(Get-Content deployment.yaml) -replace 'YOUR_DOCKERHUB_USERNAME/road-hazard-portal:latest', '%DOCKER_IMAGE%:%BUILD_TAG%' | Set-Content deployment.yaml\""
+                        
+                        // Apply cluster updates tracking via custom config context
                         bat "kubectl apply -f deployment.yaml --kubeconfig=\"%KUBECONFIG_FILE%\""
+                        
                         try {
+                            echo "Monitoring rollout status stability indicators..."
                             bat "kubectl rollout status deployment/road-hazard-portal --timeout=45s --kubeconfig=\"%KUBECONFIG_FILE%\""
+                            echo "Application Rollout marked: FUNCTIONAL & SUCCESSFUL."
                         } catch (Exception e) {
+                            echo "!! ROLLOUT DETECTED AS CRITICAL OR FAILING !! Initiating Automated Fallback..."
                             bat "kubectl rollout undo deployment/road-hazard-portal --kubeconfig=\"%KUBECONFIG_FILE%\""
-                            error("Rollback completed safely.")
+                            bat "kubectl rollout status deployment/road-hazard-portal --kubeconfig=\"%KUBECONFIG_FILE%\""
+                            error("Pipeline aborted: Rollout failed, cluster reverted back to previous deployment instance.")
                         }
                     }
                 }
