@@ -18,18 +18,12 @@ pipeline {
         }
         stage('Push to Registry') {
             steps {
-                withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDS}", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                    // Create the configuration directory structure
-                    bat "powershell -Command \"New-Item -Path . -Name 'docker-config' -ItemType 'Directory' -Force | Out-Null\""
-                    
-                    // Directly write the exact JSON template string with corrected v1 endpoint definitions
-                    bat """
-                    powershell -Command "Set-Content -Path 'docker-config\\config.json' -Value '{\\\"auths\\\":{\\\"https://docker.io\\\":{\\\"auth\\\":\\\"MjRtaXMwMTI5OmRja3JfcGF0XzlUXzlVVE54S2JfR0IydTFlOEhPMXUtcWlybnM=\\\"}}}' -Force"
-                    """
-                    
-                    // Route push executions securely via static config context mapping
-                    bat "docker --config docker-config push %DOCKER_IMAGE%:%BUILD_TAG%"
-                    bat "docker --config docker-config push %DOCKER_IMAGE%:latest"
+                script {
+                    // Utilizing official registry wrapper abstractions to authenticate cleanly on Windows hosts
+                    docker.withRegistry('https://docker.io', "${DOCKER_CREDS}") {
+                        bat "docker push %DOCKER_IMAGE%:%BUILD_TAG%"
+                        bat "docker push %DOCKER_IMAGE%:latest"
+                    }
                 }
             }
         }
@@ -52,11 +46,6 @@ pipeline {
                     }
                 }
             }
-        }
-    }
-    post {
-        always {
-            bat "powershell -Command \"if (Test-Path 'docker-config') { Remove-Item -Path 'docker-config' -Recurse -Force }\""
         }
     }
 }
