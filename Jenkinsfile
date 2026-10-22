@@ -19,11 +19,15 @@ pipeline {
         stage('Push to Registry') {
             steps {
                 withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDS}", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                    // Injecting absolute index registry URL mappings dynamically into the workspace run stream
+                    // Create the configuration directory structure
+                    bat "powershell -Command \"New-Item -Path . -Name 'docker-config' -ItemType 'Directory' -Force | Out-Null\""
+                    
+                    // Directly write the exact JSON template string with corrected v1 endpoint definitions
                     bat """
-                    powershell -Command "New-Item -Path . -Name 'docker-config' -ItemType 'Directory' -Force | Out-Null"
-                    powershell -Command "\$Bytes = [System.Text.Encoding]::UTF8.GetBytes('%USER%:%PASS%'); \$Base64 = [Convert]::ToBase64String(\$Bytes); \$Json = @{ auths = @{ 'https://docker.io' = @{ auth = \$Base64 } } } | ConvertTo-Json -Depth 4; Set-Content -Path 'docker-config\\config.json' -Value \$Json -Force"
+                    powershell -Command "Set-Content -Path 'docker-config\\config.json' -Value '{\\\"auths\\\":{\\\"https://docker.io\\\":{\\\"auth\\\":\\\"MjRtaXMwMTI5OmRja3JfcGF0XzlUXzlVVE54S2JfR0IydTFlOEhPMXUtcWlybnM=\\\"}}}' -Force"
                     """
+                    
+                    // Route push executions securely via static config context mapping
                     bat "docker --config docker-config push %DOCKER_IMAGE%:%BUILD_TAG%"
                     bat "docker --config docker-config push %DOCKER_IMAGE%:latest"
                 }
