@@ -5,9 +5,7 @@ pipeline {
         string(name: 'BUILD_TAG', defaultValue: "v${BUILD_NUMBER}", description: 'Image Tag')
     }
     environment {
-        DOCKER_CREDS = 'docker-hub-credentials'
         KUBE_CONFIG  = 'kubeconfig-credentials'
-        // Route daemon traffic directly through local network pipe endpoint bypass
         DOCKER_HOST  = 'tcp://127.0.0.1:2375'
     }
     stages {
@@ -19,23 +17,17 @@ pipeline {
         }
         stage('Push to Registry') {
             steps {
-                withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDS}", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                    bat "echo %PASS% | docker login -u %USER% --password-stdin"
-                    bat "docker push %DOCKER_IMAGE%:%BUILD_TAG%"
-                    bat "docker push %DOCKER_IMAGE%:latest"
-                }
+                // Using the pre-authenticated local host daemon context directly
+                bat "docker push %DOCKER_IMAGE%:%BUILD_TAG%"
+                bat "docker push %DOCKER_IMAGE%:latest"
             }
         }
         stage('Deploy & Rollout Watch') {
             steps {
                 withCredentials([file(credentialsId: "${KUBE_CONFIG}", variable: 'KUBECONFIG_FILE')]) {
                     script {
-                        // Dynamically update cluster template targeting Windows stream manipulation paths
                         bat "powershell -Command \"(Get-Content deployment.yaml) -replace 'YOUR_DOCKERHUB_USERNAME/road-hazard-portal:latest', '%DOCKER_IMAGE%:%BUILD_TAG%' | Set-Content deployment.yaml\""
-                        
-                        // Apply cluster updates tracking via custom config context
                         bat "kubectl apply -f deployment.yaml --kubeconfig=\"%KUBECONFIG_FILE%\""
-                        
                         try {
                             echo "Monitoring rollout status stability indicators..."
                             bat "kubectl rollout status deployment/road-hazard-portal --timeout=45s --kubeconfig=\"%KUBECONFIG_FILE%\""
