@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Municipal Road Hazard Reporting Portal</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f4f6f9; color: #333; }
+        .container { max-width: 1100px; margin: 0 auto; }
+        header { background: #0056b3; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .summary-card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; gap: 20px; }
+        .status { padding: 5px 10px; border-radius: 12px; font-size: 14px; font-weight: bold; }
+        .resolved { background: #d4edda; color: #155724; }
+        .pending { background: #fff3cd; color: #856404; }
+        .inprogress { background: #cce5ff; color: #004085; }
+        .filter-section { margin-bottom: 20px; }
+        select { padding: 10px; font-size: 16px; border-radius: 4px; border: 1px solid #ccc; width: 100%; max-width: 300px; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #007bff; color: white; }
+        tr:hover { background-color: #f1f1f1; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Road Hazard Reporting Portal</h1>
+            <p>Citizen-reported infrastructure issues & resolution tracking</p>
+        </header>
+
+        <div class="summary-card">
+            <div><strong>Total Complaints:</strong> <span>5</span></div>
+            <div><span class="status resolved">Resolved</span> <span>2</span></div>
+            <div><span class="status inprogress">In Progress</span> <span>2</span></div>
+            <div><span class="status pending">Pending</span> <span>1</span></div>
+        </div>
+
+        <div class="filter-section">
+            <label for="categoryFilter"><strong>Filter by Hazard Type:</strong></label><br><br>
+            <select id="categoryFilter" onchange="filterComplaints()">
+                <option value="all">All Categories</option>
+                <option value="pothole">Pothole</option>
+                <option value="damaged streetlight">Damaged Streetlight</option>
+                <option value="waterlogging">Waterlogging</option>
+            </select>
+        </div>
+
+        <table id="complaintsTable">
+            <thead>
+                <tr>
+                    <th>Complaint ID</th>
+                    <th>Category</th>
+                    <th>Affected Location</th>
+                    <th>Report Date</th>
+                    <th>Resolution Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="complaint-row" data-category="pothole">
+                    <td>#HZ-1001</td>
+                    <td>Pothole</td>
+                    <td>Main Commercial St, Sector 4</td>
+                    <td>2026-10-15</td>
+                    <td><span class="status resolved">Resolved</span></td>
+                </tr>
+                <tr class="complaint-row" data-category="damaged streetlight">
+                    <td>#HZ-1002</td>
+                    <td>Damaged Streetlight</td>
+                    <td>Avon Ring Road, Lane 2</td>
+                    <td>2026-10-18</td>
+                    <td><span class="status inprogress">In Progress</span></td>
+                </tr>
+                <tr class="complaint-row" data-category="waterlogging">
+                    <td>#HZ-1003</td>
+                    <td>Waterlogging</td>
+                    <td>Subway Junction, Sector 11</td>
+                    <td>2026-10-20</td>
+                    <td><span class="status pending">Pending</span></td>
+                </tr>
+                <tr class="complaint-row" data-category="pothole">
+                    <td>#HZ-1004</td>
+                    <td>Pothole</td>
+                    <td>North Boulevard, Crossroad 5</td>
+                    <td>2026-10-21</td>
+                    <td><span class="status inprogress">In Progress</span></td>
+                </tr>
+                <tr class="complaint-row" data-category="damaged streetlight">
+                    <td>#HZ-1005</td>
+                    <td>Damaged Streetlight</td>
+                    <td>Market Square View</td>
+                    <td>2026-10-22</td>
+                    <td><span class="status resolved">Resolved</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        function filterComplaints() {
+            const filterValue = document.getElementById('categoryFilter').value.toLowerCase();
+            const rows = document.querySelectorAll('.complaint-row');
+            rows.forEach(row => {
+                const category = row.getAttribute('data-category').toLowerCase();
+                if (filterValue === 'all' || category === filterValue) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
